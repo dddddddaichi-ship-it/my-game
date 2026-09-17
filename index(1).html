@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#080b18">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="STAR TAP">
+  <title>STAR TAP</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f7f8ff;
+      --muted: #9ba5c8;
+      --panel: rgba(20, 25, 52, .78);
+      --line: rgba(255, 255, 255, .12);
+      --cyan: #59f1ff;
+      --pink: #ff58b7;
+      --yellow: #ffe66d;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      color: var(--ink);
+      font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(101, 68, 255, .38), transparent 34%),
+        radial-gradient(circle at 85% 80%, rgba(0, 212, 255, .25), transparent 36%),
+        #080b18;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      opacity: .34;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle, #fff 0 1px, transparent 1.5px),
+        radial-gradient(circle, #8fe9ff 0 1px, transparent 1.5px);
+      background-position: 0 0, 36px 52px;
+      background-size: 72px 72px, 96px 96px;
+    }
+
+    .app {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      width: min(100%, 560px);
+      height: 100dvh;
+      margin: 0 auto;
+      padding: max(16px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom));
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .stat {
+      min-width: 0;
+      padding: 10px 8px;
+      text-align: center;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, .18);
+      backdrop-filter: blur(12px);
+    }
+
+    .stat small {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .12em;
+    }
+
+    .stat strong {
+      font-size: clamp(20px, 6vw, 28px);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .game {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(13, 17, 39, .72), rgba(8, 11, 24, .9));
+      box-shadow: inset 0 0 50px rgba(43, 128, 255, .08), 0 20px 60px rgba(0, 0, 0, .28);
+    }
+
+    .game::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+    }
+
+    .target {
+      position: absolute;
+      z-index: 3;
+      display: none;
+      width: 84px;
+      height: 84px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      color: #0a1024;
+      background: radial-gradient(circle at 34% 28%, #fff 0 8%, var(--yellow) 25%, #ff8b3d 70%, #ff4677 100%);
+      box-shadow: 0 0 0 8px rgba(255, 230, 109, .1), 0 0 38px rgba(255, 93, 158, .65);
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      animation: pulse .75s ease-in-out infinite alternate;
+    }
+
+    .target::before {
+      content: "★";
+      font-size: 36px;
+      filter: drop-shadow(0 2px 0 rgba(255,255,255,.35));
+    }
+
+    .target:active { scale: .88; }
+
+    @keyframes pulse {
+      to { box-shadow: 0 0 0 13px rgba(89, 241, 255, .06), 0 0 48px rgba(89, 241, 255, .62); }
+    }
+
+    .float-score {
+      position: absolute;
+      z-index: 5;
+      color: #fff;
+      font-weight: 900;
+      font-size: 26px;
+      pointer-events: none;
+      text-shadow: 0 2px 12px #000;
+      transform: translate(-50%, -50%);
+      animation: rise .55s ease-out forwards;
+    }
+
+    @keyframes rise {
+      to { opacity: 0; transform: translate(-50%, -120%); }
+    }
+
+    .overlay {
+      position: absolute;
+      z-index: 10;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      text-align: center;
+      background: rgba(7, 9, 21, .68);
+      backdrop-filter: blur(8px);
+    }
+
+    .card { width: min(100%, 360px); }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--cyan);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .2em;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 14vw, 72px);
+      line-height: .9;
+      letter-spacing: -.06em;
+      background: linear-gradient(125deg, #fff 15%, var(--cyan) 50%, var(--pink) 88%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 8px 22px rgba(88, 154, 255, .24));
+    }
+
+    .message {
+      min-height: 48px;
+      margin: 18px 0 20px;
+      color: #d7ddf7;
+      line-height: 1.55;
+    }
+
+    .result {
+      display: none;
+      margin: 16px 0 0;
+      font-size: 40px;
+      font-weight: 900;
+      color: var(--yellow);
+    }
+
+    .start {
+      width: 100%;
+      border: 0;
+      border-radius: 18px;
+      padding: 16px 20px;
+      color: #08111f;
+      font: inherit;
+      font-size: 20px;
+      font-weight: 950;
+      letter-spacing: .05em;
+      background: linear-gradient(115deg, var(--cyan), #b3ffb8);
+      box-shadow: 0 10px 30px rgba(89, 241, 255, .26);
+      cursor: pointer;
+    }
+
+    .start:active { transform: translateY(2px); }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .shake { animation: shake .2s linear; }
+    @keyframes shake { 25% { translate: -4px 0; } 75% { translate: 4px 0; } }
+
+    @media (max-height: 620px) {
+      .app { gap: 8px; padding-top: max(8px, env(safe-area-inset-top)); }
+      .stat { padding: 6px; }
+      .target { width: 70px; height: 70px; }
+      .message { margin: 10px 0 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="topbar" aria-label="ゲーム情報">
+      <div class="stat"><small>SCORE</small><strong id="score">0</strong></div>
+      <div class="stat"><small>TIME</small><strong id="time">30.0</strong></div>
+      <div class="stat"><small>BEST</small><strong id="best">0</strong></div>
+    </section>
+
+    <section class="game" id="game" aria-label="ゲームエリア">
+      <button class="target" id="target" aria-label="ターゲット"></button>
+
+      <div class="overlay" id="overlay">
+        <div class="card">
+          <p class="eyebrow">30 SECOND CHALLENGE</p>
+          <h1>STAR<br>TAP</h1>
+          <div class="result" id="result"></div>
+          <p class="message" id="message">光る星をすばやくタップ！<br>連続ヒットで得点アップ。</p>
+          <button class="start" id="start">ゲームスタート</button>
+        </div>
+      </div>
+    </section>
+
+    <p class="hint" id="hint">空振りするとコンボがリセットされます</p>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const GAME_SECONDS = 30;
+      const game = document.getElementById("game");
+      const target = document.getElementById("target");
+      const overlay = document.getElementById("overlay");
+      const startButton = document.getElementById("start");
+      const scoreText = document.getElementById("score");
+      const timeText = document.getElementById("time");
+      const bestText = document.getElementById("best");
+      const resultText = document.getElementById("result");
+      const messageText = document.getElementById("message");
+      const hintText = document.getElementById("hint");
+
+      let score = 0;
+      let combo = 0;
+      let playing = false;
+      let startedAt = 0;
+      let frameId = 0;
+      let audioContext = null;
+      let best = Number(localStorage.getItem("starTapBest") || 0);
+      bestText.textContent = best;
+
+      function beep(frequency, duration = .045) {
+        try {
+          audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          oscillator.type = "sine";
+          oscillator.frequency.value = frequency;
+          gain.gain.setValueAtTime(.055, audioContext.currentTime);
+          gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + duration);
+          oscillator.connect(gain).connect(audioContext.destination);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + duration);
+        } catch (_) {}
+      }
+
+      function moveTarget() {
+        const rect = game.getBoundingClientRect();
+        const size = target.offsetWidth || 84;
+        const margin = size / 2 + 10;
+        const x = margin + Math.random() * Math.max(1, rect.width - margin * 2);
+        const y = margin + Math.random() * Math.max(1, rect.height - margin * 2);
+        target.style.left = `${x}px`;
+        target.style.top = `${y}px`;
+        target.style.rotate = `${Math.round(Math.random() * 40 - 20)}deg`;
+      }
+
+      function showPoints(x, y, points) {
+        const popup = document.createElement("span");
+        popup.className = "float-score";
+        popup.textContent = `+${points}`;
+        popup.style.left = `${x}px`;
+        popup.style.top = `${y}px`;
+        game.appendChild(popup);
+        popup.addEventListener("animationend", () => popup.remove(), { once: true });
+      }
+
+      function tick(now) {
+        if (!playing) return;
+        const elapsed = (now - startedAt) / 1000;
+        const remaining = Math.max(0, GAME_SECONDS - elapsed);
+        timeText.textContent = remaining.toFixed(1);
+
+        if (remaining <= 0) {
+          finishGame();
+          return;
+        }
+        frameId = requestAnimationFrame(tick);
+      }
+
+      function startGame() {
+        cancelAnimationFrame(frameId);
+        score = 0;
+        combo = 0;
+        playing = true;
+        startedAt = performance.now();
+        scoreText.textContent = "0";
+        timeText.textContent = GAME_SECONDS.toFixed(1);
+        hintText.textContent = "COMBO × 0";
+        resultText.style.display = "none";
+        overlay.style.display = "none";
+        target.style.display = "block";
+        moveTarget();
+        beep(520, .07);
+        frameId = requestAnimationFrame(tick);
+      }
+
+      function finishGame() {
+        playing = false;
+        cancelAnimationFrame(frameId);
+        target.style.display = "none";
+        timeText.textContent = "0.0";
+
+        const isNewBest = score > best;
+        if (isNewBest) {
+          best = score;
+          bestText.textContent = best;
+          localStorage.setItem("starTapBest", String(best));
+        }
+
+        resultText.textContent = `${score} POINTS`;
+        resultText.style.display = "block";
+        messageText.innerHTML = isNewBest ? "NEW BEST！<br>最高記録を更新しました。" : `ベストは ${best} 点。もう一度挑戦！`;
+        startButton.textContent = "もう一度プレイ";
+        overlay.style.display = "grid";
+        hintText.textContent = "空振りするとコンボがリセットされます";
+        beep(isNewBest ? 880 : 440, .18);
+      }
+
+      target.addEventListener("pointerdown", event => {
+        if (!playing) return;
+        event.stopPropagation();
+        combo += 1;
+        const points = 1 + Math.min(4, Math.floor(combo / 5));
+        score += points;
+        scoreText.textContent = score;
+        hintText.textContent = `COMBO × ${combo}`;
+
+        const rect = game.getBoundingClientRect();
+        showPoints(event.clientX - rect.left, event.clientY - rect.top, points);
+        beep(520 + Math.min(combo, 20) * 20);
+        navigator.vibrate?.(12);
+        moveTarget();
+      });
+
+      game.addEventListener("pointerdown", event => {
+        if (!playing || event.target === target) return;
+        combo = 0;
+        hintText.textContent = "MISS — COMBO × 0";
+        game.classList.remove("shake");
+        void game.offsetWidth;
+        game.classList.add("shake");
+        beep(150, .06);
+      });
+
+      startButton.addEventListener("click", startGame);
+      window.addEventListener("resize", () => playing && moveTarget());
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden && playing) finishGame();
+      });
+    })();
+  </script>
+</body>
+</html>
